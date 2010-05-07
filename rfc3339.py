@@ -91,6 +91,8 @@ Here's an excerpt from RFC 3339 itself:
 import datetime, time, calendar
 import re
 
+__all__ = ["tzinfo", "UTC_TZ", "parse_date", "parse_datetime", "now", "utcfromtimestamp", "utctotimestamp", "datetimetostr", "timestamptostr", "strtotimestamp"]
+
 ZERO = datetime.timedelta(0)
 
 class tzinfo(datetime.tzinfo):
