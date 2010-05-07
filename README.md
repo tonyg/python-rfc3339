@@ -11,7 +11,7 @@ routines in this module.
 
 ## Examples and documentation
 
-See the [pydoc documentation for the rfc3339 module](raw/master/rfc3339.html).
+See the docstrings in the rfc3339 module source code itself.
 
 ## Limitations and potential improvements
 
