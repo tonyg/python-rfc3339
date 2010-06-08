@@ -99,7 +99,7 @@ class tzinfo(datetime.tzinfo):
     """
     Implementation of a fixed-offset tzinfo.
     """
-    def __init__(self, minutesEast, name):
+    def __init__(self, minutesEast = 0, name = 'Z'):
         """
         minutesEast -> number of minutes east of UTC that this tzinfo represents.
         name -> symbolic (but uninterpreted) name of this tzinfo.
