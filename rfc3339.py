@@ -44,6 +44,12 @@ Potential Improvements:
  - Support for leap seconds. (There's a table of them in RFC 3339 itself,
    and http://tf.nist.gov/pubs/bulletin/leapsecond.htm updates monthly.)
 
+Extensions beyond the RFC:
+
+ - Accepts (but will not generate) dates formatted with a time-offset
+   missing a colon. (Implemented because Facebook are generating
+   broken RFC 3339 timestamps.)
+
 Here's an excerpt from RFC 3339 itself:
 
 5.6. Internet Date/Time Format
@@ -130,7 +136,7 @@ class tzinfo(datetime.tzinfo):
 UTC_TZ = tzinfo(0, 'Z')
 
 date_re_str = r'(\d\d\d\d)-(\d\d)-(\d\d)'
-time_re_str = r'(\d\d):(\d\d):(\d\d)(\.(\d+))?([zZ]|(([-+])(\d\d):(\d\d)))'
+time_re_str = r'(\d\d):(\d\d):(\d\d)(\.(\d+))?([zZ]|(([-+])(\d\d):?(\d\d)))'
 
 def make_re(*parts):
     return re.compile(r'^\s*' + ''.join(parts) + r'\s*$')
@@ -182,6 +188,35 @@ def parse_date(s):
     else:
         raise ValueError('Invalid RFC 3339 date string', s)
 
+def _offset_to_tzname(offset):
+    """
+    Converts an offset in minutes to an RFC 3339 "time-offset" string.
+
+    >>> _offset_to_tzname(0)
+    '+00:00'
+    >>> _offset_to_tzname(-1)
+    '-00:01'
+    >>> _offset_to_tzname(-60)
+    '-01:00'
+    >>> _offset_to_tzname(-779)
+    '-12:59'
+    >>> _offset_to_tzname(1)
+    '+00:01'
+    >>> _offset_to_tzname(60)
+    '+01:00'
+    >>> _offset_to_tzname(779)
+    '+12:59'
+    """
+    offset = int(offset)
+    if offset < 0:
+        tzsign = '-'
+    else:
+        tzsign = '+'
+    offset = abs(offset)
+    tzhour = offset / 60
+    tzmin = offset % 60
+    return '%s%02d:%02d' % (tzsign, tzhour, tzmin)
+
 def parse_datetime(s):
     """
     Given a string matching the 'date-time' production above, returns
@@ -204,6 +239,8 @@ def parse_datetime(s):
     datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(60,'+01:00'))
     >>> parse_datetime("2008-08-24T00:00:00-01:00")
     datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(-60,'-01:00'))
+    >>> parse_datetime("2008-08-24T00:00:00-01:23")
+    datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(-83,'-01:23'))
     >>> parse_datetime("2008-08-24T24:00:00Z")
     Traceback (most recent call last):
       File "<stdin>", line 1, in <module>
@@ -224,6 +261,21 @@ def parse_datetime(s):
     '2008-08-24T01:00:00+01:00'
     >>> parse_datetime("2008-08-24T00:00:00.123Z").isoformat()
     '2008-08-24T00:00:00.123000+00:00'
+
+    Facebook generates incorrectly-formatted RFC 3339 timestamps, with
+    the time-offset missing the colon:
+    >>> parse_datetime("2008-08-24T00:00:00+0000")
+    datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.UTC_TZ)
+    >>> parse_datetime("2008-08-24T00:00:00+0100")
+    datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(60,'+01:00'))
+    >>> parse_datetime("2008-08-24T00:00:00-0100")
+    datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(-60,'-01:00'))
+    >>> parse_datetime("2008-08-24T00:00:00-0123")
+    datetime.datetime(2008, 8, 24, 0, 0, tzinfo=rfc3339.tzinfo(-83,'-01:23'))
+
+    While we accept such broken time-offsets, we don't generate them:
+    >>> parse_datetime("2008-08-24T00:00:00+0100").isoformat()
+    '2008-08-24T00:00:00+01:00'
     """
     m = datetime_re.match(s)
     if m:
@@ -250,7 +302,7 @@ def parse_datetime(s):
 
                 if tzsign == '-':
                     offset = -offset
-                tz = tzinfo(offset, wholetz)
+                tz = tzinfo(offset, _offset_to_tzname(offset))
 
         return datetime.datetime(int(y), int(m), int(d),
                                  int(hour), int(min), int(sec), microsec,
