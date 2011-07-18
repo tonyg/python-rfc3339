@@ -276,6 +276,19 @@ def parse_datetime(s):
     While we accept such broken time-offsets, we don't generate them:
     >>> parse_datetime("2008-08-24T00:00:00+0100").isoformat()
     '2008-08-24T00:00:00+01:00'
+
+    Seconds don't have to be integers:
+    >>> parse_datetime("2008-08-24T00:00:11.25Z")
+    datetime.datetime(2008, 8, 24, 0, 0, 11, 250000, tzinfo=rfc3339.UTC_TZ)
+    >>> parse_datetime("2008-08-24T00:00:11.25-0123")
+    datetime.datetime(2008, 8, 24, 0, 0, 11, 250000, tzinfo=rfc3339.tzinfo(-83,'-01:23'))
+    >>> parse_datetime("2008-08-24T00:00:11.25+0123")
+    datetime.datetime(2008, 8, 24, 0, 0, 11, 250000, tzinfo=rfc3339.tzinfo(83,'+01:23'))
+
+    Rendering non-integer seconds produces an acceptable, if
+    non-minimal result:
+    >>> parse_datetime("2008-08-24T00:00:11.25Z").isoformat()
+    '2008-08-24T00:00:11.250000+00:00'
     """
     m = datetime_re.match(s)
     if m:
