@@ -9,6 +9,13 @@ dates and times.
 Use datetime.datetime.isoformat() as an inverse of the various parsing
 routines in this module.
 
+This library sticks quite closely to the RFC 3339 profile of ISO
+8601. If that's too strict for you, and you need something for parsing
+more general ISO 8601 dates and times, you might find
+[pyiso8601](http://code.google.com/p/pyiso8601/) (in debian as package
+[`python-iso8601`](http://packages.debian.org/search?keywords=python-iso8601))
+useful.
+
 ## Examples and documentation
 
 See the docstrings in the rfc3339 module source code itself.
