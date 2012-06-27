@@ -38,8 +38,10 @@ Limitations, with respect to RFC 3339:
 
 Potential Improvements:
 
- - Support for leap seconds. (There's a table of them in RFC 3339 itself,
-   and <http://tf.nist.gov/pubs/bulletin/leapsecond.htm> updates monthly.)
+ - Support for leap seconds. (There's a table of them in RFC 3339
+   itself, and <http://www.nist.gov/pml/div688/grp50/leapsecond.cfm>
+   <!-- used to be http://tf.nist.gov/pubs/bulletin/leapsecond.htm -->
+   is supposed to update monthly.)
 
 ## Copyright
 
