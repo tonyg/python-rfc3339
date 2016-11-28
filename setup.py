@@ -8,4 +8,8 @@ setup(name='rfc3339',
       author_email='tonyg@lshift.net',
       url='http://www.lshift.net/',
       py_modules=['rfc3339'],
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3'
+      ],
       )
