@@ -97,7 +97,20 @@ Here's an excerpt from RFC 3339 itself:
 import datetime, time, calendar
 import re
 
-__all__ = ["tzinfo", "UTC_TZ", "parse_date", "parse_datetime", "now", "utcfromtimestamp", "utctotimestamp", "datetimetostr", "timestamptostr", "strtotimestamp"]
+
+__all__ = [
+    'tzinfo',
+    'UTC_TZ',
+    'parse_date',
+    'parse_datetime',
+    'now',
+    'utcfromtimestamp',
+    'utctotimestamp',
+    'datetimetostr',
+    'timestamptostr',
+    'strtotimestamp',
+]
+
 
 ZERO = datetime.timedelta(0)
 
@@ -143,6 +156,7 @@ def make_re(*parts):
 
 date_re = make_re(date_re_str)
 datetime_re = make_re(date_re_str, r'[ tT]', time_re_str)
+time_re = make_re(time_re_str)
 
 def parse_date(s):
     """
@@ -216,6 +230,77 @@ def _offset_to_tzname(offset):
     tzhour = offset / 60
     tzmin = offset % 60
     return '%s%02d:%02d' % (tzsign, tzhour, tzmin)
+
+
+def _parse_time_components(s, hour, min, sec, frac_sec, wholetz, tzsign, tzhour, tzmin):
+    if frac_sec:
+        frac_sec = float('0.' + frac_sec)
+    else:
+        frac_sec = 0
+    microsec = int((frac_sec * 1000000) + 0.5)
+
+    if wholetz == 'z' or wholetz == 'Z':
+        tz = UTC_TZ
+    else:
+        tzhour = int(tzhour)
+        tzmin = int(tzmin)
+        offset = tzhour * 60 + tzmin
+        if offset == 0:
+            tz = UTC_TZ
+        else:
+            if tzhour > 24 or tzmin > 60 or offset > 1439:  ## see tzinfo docs for the 1439 part
+                raise ValueError('Invalid timezone offset', s, wholetz)
+
+            if tzsign == '-':
+                offset = -offset
+            tz = tzinfo(offset, _offset_to_tzname(offset))
+
+    return int(hour), int(min), int(sec), microsec, tz
+
+
+def parse_time(s):
+    """
+    Given a string matching the 'full-time' production above, returns
+    a datetime.time instance. Any deviation from the allowed
+    format will produce a raised ValueError.
+
+    >>> parse_time("00:00:00Z")
+    datetime.time(0, 0, tzinfo=rfc3339.UTC_TZ)
+    >>> parse_time("   00:00:00Z ")
+    datetime.time(0, 0, tzinfo=rfc3339.UTC_TZ)
+    >>> parse_time("00:00:00")
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "rfc3339.py", line 302, in parse_time
+        raise ValueError('Invalid RFC 3339 time string', s)
+    ValueError: ('Invalid RFC 3339 time string', '00:00:00')
+    >>> parse_time("00:00:00+00:00")
+    datetime.time(0, 0, tzinfo=rfc3339.UTC_TZ)
+    >>> parse_time("00:00:00+01:00")
+    datetime.time(0, 0, tzinfo=rfc3339.tzinfo(60,'+01:00'))
+    >>> parse_time("00:00:00-01:00")
+    datetime.time(0, 0, tzinfo=rfc3339.tzinfo(-60,'-01:00'))
+    >>> parse_time("00:00:00-01:23")
+    datetime.time(0, 0, tzinfo=rfc3339.tzinfo(-83,'-01:23'))
+    >>> parse_time("24:00:00Z")
+    Traceback (most recent call last):
+      File "<stdin>", line 1, in <module>
+      File "rfc3339.py", line 206, in parse_datetime
+        tz)
+    ValueError: hour must be in 0..23
+    """
+    m = time_re.match(s)
+    if m:
+        (hour, min, sec, ignore1, frac_sec, wholetz, ignore2,
+         tzsign, tzhour, tzmin) = m.groups()
+
+        hour, min, sec, microsec, tz = _parse_time_components(
+            s, hour, min, sec, frac_sec, wholetz, tzsign, tzhour, tzmin)
+
+        return datetime.time(hour, min, sec, microsec, tz)
+    else:
+        raise ValueError('Invalid RFC 3339 time string', s)
+
 
 def parse_datetime(s):
     """
@@ -292,34 +377,14 @@ def parse_datetime(s):
     """
     m = datetime_re.match(s)
     if m:
-        (y, m, d, hour, min, sec, ignore1, frac_sec, wholetz, ignore2, tzsign, tzhour, tzmin) = \
-            m.groups()
+        (y, m, d, hour, min, sec, ignore1, frac_sec, wholetz, ignore2,
+         tzsign, tzhour, tzmin) = m.groups()
 
-        if frac_sec:
-            frac_sec = float("0." + frac_sec)
-        else:
-            frac_sec = 0
-        microsec = int((frac_sec * 1000000) + 0.5)
+        hour, min, sec, microsec, tz = _parse_time_components(
+            s, hour, min, sec, frac_sec, wholetz, tzsign, tzhour, tzmin)
 
-        if wholetz == 'z' or wholetz == 'Z':
-            tz = UTC_TZ
-        else:
-            tzhour = int(tzhour)
-            tzmin = int(tzmin)
-            offset = tzhour * 60 + tzmin
-            if offset == 0:
-                tz = UTC_TZ
-            else:
-                if tzhour > 24 or tzmin > 60 or offset > 1439: ## see tzinfo docs for the 1439 part
-                    raise ValueError('Invalid timezone offset', s, wholetz)
-
-                if tzsign == '-':
-                    offset = -offset
-                tz = tzinfo(offset, _offset_to_tzname(offset))
-
-        return datetime.datetime(int(y), int(m), int(d),
-                                 int(hour), int(min), int(sec), microsec,
-                                 tz)
+        return datetime.datetime(
+            int(y), int(m), int(d), hour, min, sec, microsec, tz)
     else:
         raise ValueError('Invalid RFC 3339 datetime string', s)
 
@@ -341,6 +406,27 @@ def utctotimestamp(dt):
     """Returns a count of the elapsed seconds between the Unix epoch
     and the passed-in datetime.datetime object."""
     return calendar.timegm(dt.utctimetuple())
+
+
+def timetostr(t):
+    """
+    Return a RFC3339 time string corresponding to the given time object.
+
+    >>> timetostr(datetime.time(0, 0, tzinfo=UTC_TZ))
+    '00:00:00Z'
+    >>> timetostr(datetime.time(0, 0, tzinfo=tzinfo(60, '+01:00')))
+    '00:00:00+01:00'
+    >>> timetostr(datetime.time(0, 0, 11, 250000, tzinfo=tzinfo(-83, '-01:23')))
+    '00:00:11.250000-01:23'
+    """
+    if t.utcoffset() is not None:
+        if t.utcoffset() != ZERO:
+            return t.isoformat()
+        else:
+            t = t.replace(tzinfo=None)
+
+    return "%sZ" % t.isoformat()
+
 
 def datetimetostr(dt):
     """Return a RFC3339 date-time string corresponding to the given
