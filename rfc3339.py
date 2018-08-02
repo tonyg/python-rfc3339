@@ -343,12 +343,24 @@ def utctotimestamp(dt):
     return calendar.timegm(dt.utctimetuple())
 
 def datetimetostr(dt):
-    """Return a RFC3339 date-time string corresponding to the given
-    datetime object."""
+    """
+    Return a RFC3339 date-time string corresponding to the given
+    datetime object.
+
+    >>> datetimetostr(datetime.datetime(2008, 8, 24, 0, 0, tzinfo=UTC_TZ))
+    '2008-08-24T00:00:00Z'
+    >>> datetimetostr(datetime.datetime(2008, 8, 24, 0, 0, tzinfo=tzinfo(60, '+01:00')))
+    '2008-08-24T00:00:00+01:00'
+    >>> datetimetostr(datetime.datetime(2008, 8, 24, 0, 0, 11, 250000, tzinfo=tzinfo(-83, '-01:23')))
+    '2008-08-24T00:00:11.250000-01:23'
+    """
     if dt.utcoffset() is not None:
-        return dt.isoformat()
-    else:
-        return "%sZ" % dt.isoformat()
+        if dt.utcoffset() != ZERO:
+            return dt.isoformat()
+        else:
+            dt = dt.replace(tzinfo=None)
+
+    return "%sZ" % dt.isoformat()
 
 def timestamptostr(ts):
     """Return a RFC3339 date-time string corresponding to the given
