@@ -103,12 +103,14 @@ __all__ = [
     'UTC_TZ',
     'parse_date',
     'parse_datetime',
+    'parse_time',
     'now',
     'utcfromtimestamp',
     'utctotimestamp',
     'datetimetostr',
     'timestamptostr',
     'strtotimestamp',
+    'timetostr',
 ]
 
 
