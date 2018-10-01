@@ -43,10 +43,15 @@ Potential Improvements:
    <!-- used to be http://tf.nist.gov/pubs/bulletin/leapsecond.htm -->
    is supposed to update monthly.)
 
+## Maintainer
+
+Tony Garnock-Jones <tonygarnockjones@gmail.com>
+
 ## Copyright
 
 rfc3339.py -- Implementation of the majority of RFC 3339 for python.  
-Copyright (c) 2008, 2009, 2010 LShift Ltd. <query@lshift.net>
+Copyright (c) 2008, 2009, 2010 LShift Ltd. <query@lshift.net>  
+Copyright (c) 2011 Tony Garnock-Jones <tonygarnockjones@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
