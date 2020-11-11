@@ -12,7 +12,7 @@ routines in this module.
 This library sticks quite closely to the RFC 3339 profile of ISO
 8601. If that's too strict for you, and you need something for parsing
 more general ISO 8601 dates and times, you might find
-[pyiso8601](http://code.google.com/p/pyiso8601/) (in debian as package
+[pyiso8601](https://github.com/micktwomey/pyiso8601) (in debian as package
 [`python-iso8601`](http://packages.debian.org/search?keywords=python-iso8601))
 useful.
 
